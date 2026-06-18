@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmação de Presença · 10 Anos do Quartel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===================== PÁGINA PÚBLICA (FORMULÁRIO) ===================== -->
+  <div class="form-page" id="form-page">
+    <div class="bg-overlay" id="bg-overlay"></div>
+    <div class="bg-pattern-default" id="bg-pattern"></div>
+
+    <div class="top-spacer" id="top-spacer"></div>
+
+    <!-- Cartão do formulário -->
+    <div class="card" id="form-card">
+      <div id="fields-render"></div>
+
+      <div class="sep"></div>
+      <div class="sec-label">Confirmação de presença</div>
+      <div class="conf-row">
+        <button class="cbtn csim" id="cbtn-sim" type="button">Confirmo presença</button>
+        <button class="cbtn cnao" id="cbtn-nao" type="button">Não poderei comparecer</button>
+      </div>
+      <div class="emsg" id="err-confirma">Confirme sua presença ou ausência.</div>
+
+      <button class="sub-btn" id="pub-submit-btn" type="button">Enviar confirmação</button>
+      <div class="fn" id="pub-footer">Todos os campos são obrigatórios. Dados usados exclusivamente para organização do evento.</div>
+    </div>
+
+    <!-- Tela de sucesso -->
+    <div class="success-screen" id="success-screen">
+      <div class="sicon">✓</div>
+      <div class="success-title">Confirmação registrada</div>
+      <div class="success-text">
+        Obrigado, <span id="nome-confirmado"></span>.<br>Sua presença foi anotada com sucesso.
+      </div>
+    </div>
+
+    <!-- Tela de carregando (enquanto envia ao Google Sheets) -->
+    <div class="loading-screen" id="loading-screen">
+      <div class="spinner"></div>
+      <div class="loading-text">Enviando confirmação...</div>
+    </div>
+
+    <!-- Tela de erro de envio -->
+    <div class="error-screen" id="error-screen">
+      <div class="eicon">!</div>
+      <div class="error-title">Não foi possível enviar</div>
+      <div class="error-text">Verifique sua internet e tente novamente.</div>
+      <button class="retry-btn" id="retry-btn" type="button">Tentar novamente</button>
+    </div>
+
+    <button class="admin-btn-float" id="open-admin-btn" type="button">⚙ Admin</button>
+
+    <!-- Modal de login do admin -->
+    <div class="login-modal" id="login-modal">
+      <div class="login-box">
+        <div class="login-title">Acesso restrito</div>
+        <div class="login-sub">Painel do administrador</div>
+        <input class="login-input" type="password" id="login-pwd" placeholder="Senha" autocomplete="off">
+        <button class="login-btn" id="login-submit-btn" type="button">Entrar</button>
+        <div class="login-err" id="login-err">Senha incorreta.</div>
+        <div style="margin-top:10px;">
+          <button class="login-cancel" id="login-cancel-btn" type="button">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PÁGINA DO ADMIN ===================== -->
+  <div class="admin-page" id="admin-page">
+    <div class="admin-header">
+      <div>
+        <div class="admin-title">Painel do administrador</div>
+        <div class="admin-subtitle">Gerencie o formulário de RSVP</div>
+      </div>
+      <button class="back-btn" id="close-admin-btn" type="button">← Ver formulário</button>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="tab-btn active" data-tab="textos" type="button">Textos</button>
+      <button class="tab-btn" data-tab="campos" type="button">Campos</button>
+      <button class="tab-btn" data-tab="imagem" type="button">Imagem de fundo</button>
+      <button class="tab-btn" data-tab="conexao" type="button">Conexão</button>
+      <button class="tab-btn" data-tab="senha" type="button">Senha</button>
+    </div>
+
+    <!-- TAB: Textos -->
+    <div class="tab-panel active" id="tab-textos">
+      <div class="acard">
+        <div class="acard-title">Textos do formulário</div>
+        <div class="afield">
+          <label>Texto do botão de envio</label>
+          <input type="text" id="cfg-submitbtn" placeholder="Ex: Enviar confirmação">
+        </div>
+        <div class="afield">
+          <label>Rodapé do formulário</label>
+          <input type="text" id="cfg-footer" placeholder="Ex: Todos os campos são obrigatórios.">
+        </div>
+        <div class="afield">
+          <label>Espaço acima do formulário (px) — para encaixar sua arte de cabeçalho</label>
+          <input type="number" id="cfg-spacer" placeholder="Ex: 24" min="0">
+        </div>
+        <button class="save-btn" id="save-textos-btn" type="button">✓ Salvar e aplicar</button>
+      </div>
+    </div>
+
+    <!-- TAB: Campos -->
+    <div class="tab-panel" id="tab-campos">
+      <div class="acard">
+        <div class="acard-title">Campos do formulário</div>
+        <div id="fields-editor"></div>
+      </div>
+    </div>
+
+    <!-- TAB: Imagem de fundo -->
+    <div class="tab-panel" id="tab-imagem">
+      <div class="acard">
+        <div class="acard-title">Imagem de fundo</div>
+        <div class="dim-badge">📐 Tamanho recomendado: 1080 × 1920 px (vertical)</div>
+        <p class="hint-text">
+          Inclua na própria arte o círculo com a estrela, o título "Confirmação de presença · 10 Anos do Quartel" e o tracinho do horário — tudo isso vira parte da imagem de fundo.
+        </p>
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-icon">⬆</div>
+          <div class="upload-text">Clique para selecionar a imagem</div>
+          <div class="upload-hint">PNG, JPG ou WEBP · Máx. 5 MB</div>
+        </div>
+        <div class="upload-preview" id="upload-preview">
+          <img id="preview-img" src="" alt="Preview da imagem de fundo">
+          <button class="upload-remove" id="remove-img-btn" type="button">✕ Remover</button>
+        </div>
+        <input type="file" id="bg-file" accept="image/*" style="display:none">
+        <div class="preview-tag">A imagem aparecerá como fundo completo da página.</div>
+      </div>
+    </div>
+
+    <!-- TAB: Conexão (Google Sheets) -->
+    <div class="tab-panel" id="tab-conexao">
+      <div class="acard">
+        <div class="acard-title">Conexão com Google Sheets</div>
+        <p class="hint-text">
+          Cole aqui a URL do seu Google Apps Script (Web App) para que as confirmações sejam enviadas direto para a sua planilha.
+        </p>
+        <div class="afield">
+          <label>URL do Web App (Apps Script)</label>
+          <input type="text" id="cfg-webhook" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <button class="save-btn" id="save-webhook-btn" type="button">✓ Salvar conexão</button>
+        <div class="emsg-success" id="webhook-saved-msg">Conexão salva com sucesso!</div>
+      </div>
+    </div>
+
+    <!-- TAB: Senha -->
+    <div class="tab-panel" id="tab-senha">
+      <div class="acard">
+        <div class="acard-title">Alterar senha do admin</div>
+        <div class="afield">
+          <label>Senha atual</label>
+          <input type="password" id="pwd-atual" placeholder="Digite a senha atual">
+        </div>
+        <div class="afield">
+          <label>Nova senha</label>
+          <input type="password" id="pwd-nova" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="afield">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="pwd-conf" placeholder="Repita a nova senha">
+        </div>
+        <div class="emsg-inline" id="pwd-msg"></div>
+        <button class="save-btn" id="save-pwd-btn" type="button">Alterar senha</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
