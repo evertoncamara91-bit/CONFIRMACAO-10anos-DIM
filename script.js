@@ -511,11 +511,23 @@ function showBgPreview(dataUrl) {
 
 function applyBgToForm(dataUrl) {
   const overlay = document.getElementById('bg-overlay');
+  const artHeader = document.getElementById('art-header');
+
   if (dataUrl) {
+    // Desktop: wallpaper atrás do formulário
     overlay.style.backgroundImage = 'url(' + dataUrl + ')';
+    overlay.classList.add('has-image');
+
+    // Mobile: faixa no topo
+    artHeader.style.backgroundImage = 'url(' + dataUrl + ')';
+    artHeader.classList.add('has-image');
+
     document.getElementById('bg-pattern').style.display = 'none';
   } else {
     overlay.style.backgroundImage = 'none';
+    overlay.classList.remove('has-image');
+    artHeader.style.backgroundImage = 'none';
+    artHeader.classList.remove('has-image');
     document.getElementById('bg-pattern').style.display = 'block';
   }
 }
