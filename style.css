@@ -31,6 +31,10 @@ body {
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .form-page { padding-top: 0; }
+}
+
 /* Desktop: arte como wallpaper atrás do formulário */
 .bg-overlay {
   position: absolute;
@@ -46,14 +50,14 @@ body {
 .art-header {
   display: none; /* escondido por padrão, JS ativa quando há imagem */
   width: 100%;
-  height: 220px;
+  height: 160px;
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
   position: relative;
   z-index: 1;
   margin-bottom: 1.25rem;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 12px 12px;
 }
 
 /* No mobile: mostra faixa no topo, esconde wallpaper */
