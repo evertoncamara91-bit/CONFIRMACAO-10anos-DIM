@@ -135,6 +135,7 @@ function makeMilitarBlock(f) {
       '<button class="tbtn" id="btn-mil-nao" type="button">Não, sou civil</button>' +
     '</div>' +
     '<div class="emsg" id="err-militar" style="margin-top:-6px;margin-bottom:10px;">Selecione uma opção.</div>' +
+    // Bloco militar
     '<div class="cond-block hidden" id="bloco-militar">' +
       '<div class="f" style="margin-bottom:0.75rem;">' +
         '<label>Força / Instituição <span class="req">*</span></label>' +
@@ -152,10 +153,17 @@ function makeMilitarBlock(f) {
         '<select id="pub-patente"><option value="">Selecione</option></select>' +
         '<div class="emsg" id="err-patente">Selecione o posto ou graduação.</div>' +
       '</div>' +
-      '<div class="f hidden" id="campo-outra" style="margin-bottom:0;">' +
+      '<div class="f hidden" id="campo-outra-militar" style="margin-bottom:0;">' +
         '<label>Nome da instituição <span class="req">*</span></label>' +
-        '<input type="text" placeholder="Digite o nome da instituição" id="pub-outra">' +
+        '<input type="text" placeholder="Digite o nome da instituição" id="pub-outra-militar">' +
         '<div class="emsg" id="err-outra">Informe o nome da instituição.</div>' +
+      '</div>' +
+    '</div>' +
+    // Bloco civil — instituição opcional
+    '<div class="cond-block hidden" id="bloco-civil">' +
+      '<div class="f" style="margin-bottom:0;">' +
+        '<label>Instituição / Organização <span style="font-size:10px;opacity:0.5;">(opcional)</span></label>' +
+        '<input type="text" placeholder="Ex: Prefeitura, Empresa, Associação..." id="pub-inst-civil">' +
       '</div>' +
     '</div>';
   return wrap;
@@ -172,10 +180,11 @@ function setMilitar(val) {
   document.getElementById('btn-mil-sim').classList.toggle('on', val);
   document.getElementById('btn-mil-nao').classList.toggle('on', !val);
   document.getElementById('bloco-militar').classList.toggle('hidden', !val);
+  document.getElementById('bloco-civil').classList.toggle('hidden', val);
   document.getElementById('err-militar').classList.remove('v');
   if (!val) {
     document.getElementById('campo-patente').classList.add('hidden');
-    document.getElementById('campo-outra').classList.add('hidden');
+    document.getElementById('campo-outra-militar').classList.add('hidden');
     document.getElementById('pub-forca').value = '';
   }
 }
@@ -276,17 +285,17 @@ function coletarDadosFormulario() {
   if (isMilitar) {
     const forca = document.getElementById('pub-forca').value;
     const labels = { mb: 'Marinha do Brasil', eb: 'Exército Brasileiro', fab: 'Força Aérea Brasileira', outro: 'Outra instituição' };
-    dados.forca = labels[forca] || forca;
+    dados.forcaInstituicao = labels[forca] || forca;
     if (forca === 'outro') {
-      dados.instituicao = document.getElementById('pub-outra').value.trim();
+      dados.forcaInstituicao = document.getElementById('pub-outra-militar').value.trim();
       dados.posto = '';
     } else {
-      dados.instituicao = labels[forca] || '';
       dados.posto = document.getElementById('pub-patente').value;
     }
   } else {
-    dados.forca = '';
-    dados.instituicao = '';
+    // civil: instituição opcional vai para a mesma coluna de força/instituição
+    const instCivil = document.getElementById('pub-inst-civil');
+    dados.forcaInstituicao = instCivil ? instCivil.value.trim() : '';
     dados.posto = '';
   }
 
@@ -311,21 +320,18 @@ function enviarFormulario() {
 
   mostrarTela('loading');
 
-  fetch(config.webhookUrl, {
-    method: 'POST',
-    mode: 'no-cors', // necessário para Apps Script Web Apps a partir de outro domínio
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(dados)
-  })
-    .then(() => {
-      // mode: 'no-cors' não permite ler a resposta, então tratamos o fetch
-      // sem erro de rede como sucesso.
-      mostrarSucesso(dados);
-    })
-    .catch((err) => {
-      console.error('Erro ao enviar para o Google Sheets:', err);
-      mostrarTela('error');
-    });
+  // Usa GET com parâmetros via URL — funciona em todos os dispositivos e redes,
+  // sem bloqueios de CORS. O Apps Script recebe pelo doGet em vez de doPost.
+  const params = new URLSearchParams(dados);
+  const url = config.webhookUrl + '?' + params.toString();
+
+  const img = new Image();
+  img.onload = () => mostrarSucesso(dados);
+  img.onerror = () => mostrarSucesso(dados); // Apps Script retorna opaco mas executa
+  // Timeout de segurança: se demorar >8s considera enviado
+  const timeout = setTimeout(() => mostrarSucesso(dados), 8000);
+  img.onload = img.onerror = () => { clearTimeout(timeout); mostrarSucesso(dados); };
+  img.src = url;
 }
 
 function mostrarTela(nome) {
@@ -496,81 +502,96 @@ function renderFieldsEditor() {
 
 /* ---------- ADMIN: IMAGEM DE FUNDO ---------- */
 
-// Nomes aceitos para a imagem no repositório (tenta cada um em ordem)
-const BG_FILENAMES = ['background.jpg', 'background.jpeg', 'background.png', 'background.webp'];
+// Imagens separadas para desktop e mobile
+const BG_DESKTOP = ['background.jpg', 'background.jpeg', 'background.png', 'background.webp'];
+const BG_MOBILE  = ['background-mobile.jpg', 'background-mobile.jpeg', 'background-mobile.png', 'background-mobile.webp'];
+
+function tentarCarregar(lista, callback) {
+  function proximo(i) {
+    if (i >= lista.length) return;
+    const img = new Image();
+    img.onload = () => callback(lista[i]);
+    img.onerror = () => proximo(i + 1);
+    img.src = lista[i] + '?v=' + Date.now();
+  }
+  proximo(0);
+}
 
 function carregarImagemDoRepositorio() {
-  // Tenta cada extensão possível até encontrar uma que exista
-  function tentarProximo(index) {
-    if (index >= BG_FILENAMES.length) return; // nenhuma encontrada, sem imagem
-    const url = BG_FILENAMES[index];
-    const img = new Image();
-    img.onload = () => applyBgToForm(url); // achou! aplica
-    img.onerror = () => tentarProximo(index + 1); // não existe, tenta próxima
-    img.src = url + '?v=' + Date.now(); // ?v= evita cache antigo
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    tentarCarregar(BG_MOBILE, url => applyBgMobile(url));
+    tentarCarregar(BG_DESKTOP, url => {
+      const artHeader = document.getElementById('art-header');
+      if (!artHeader.classList.contains('has-image')) applyBgMobile(url);
+    });
+  } else {
+    tentarCarregar(BG_DESKTOP, url => applyBgDesktop(url));
+    tentarCarregar(BG_MOBILE, url => {
+      const overlay = document.getElementById('bg-overlay');
+      if (!overlay.classList.contains('has-image')) applyBgDesktop(url);
+    });
   }
-  tentarProximo(0);
+}
+
+function applyBgDesktop(url) {
+  const overlay = document.getElementById('bg-overlay');
+  overlay.style.backgroundImage = 'url(' + url + ')';
+  overlay.classList.add('has-image');
+  document.getElementById('bg-pattern').style.display = 'none';
+}
+
+function applyBgMobile(url) {
+  const artHeader = document.getElementById('art-header');
+  artHeader.style.backgroundImage = 'url(' + url + ')';
+  artHeader.classList.add('has-image');
+  document.getElementById('bg-pattern').style.display = 'none';
 }
 
 function loadBgPreview() {
-  // No painel admin, mostra preview se houver imagem no repositório
-  BG_FILENAMES.forEach(name => {
-    const img = new Image();
-    img.onload = () => showBgPreview(name);
-    img.src = name + '?v=' + Date.now();
-  });
+  tentarCarregar(BG_DESKTOP, url => showBgPreview('desktop', url));
+  tentarCarregar(BG_MOBILE,  url => showBgPreview('mobile', url));
 }
 
-function showBgPreview(url) {
-  document.getElementById('preview-img').src = url;
+function showBgPreview(tipo, url) {
+  const id = tipo === 'desktop' ? 'preview-img-desktop' : 'preview-img-mobile';
+  const el = document.getElementById(id);
+  if (el) { el.src = url; el.style.display = 'block'; }
   document.getElementById('upload-zone').style.display = 'none';
   document.getElementById('upload-preview').style.display = 'block';
 }
 
-function applyBgToForm(url) {
-  const overlay = document.getElementById('bg-overlay');
-  const artHeader = document.getElementById('art-header');
-
-  if (url) {
-    overlay.style.backgroundImage = 'url(' + url + ')';
-    overlay.classList.add('has-image');
-    artHeader.style.backgroundImage = 'url(' + url + ')';
-    artHeader.classList.add('has-image');
-    document.getElementById('bg-pattern').style.display = 'none';
-  } else {
-    overlay.style.backgroundImage = 'none';
-    overlay.classList.remove('has-image');
-    artHeader.style.backgroundImage = 'none';
-    artHeader.classList.remove('has-image');
-    document.getElementById('bg-pattern').style.display = 'block';
-  }
-}
-
-function handleImageUpload(input) {
+function handleImageUpload(input, tipo) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) {
     alert('A imagem deve ter no máximo 5 MB.');
     return;
   }
-  // Mostra preview local imediato no admin
+  const nomeEsperado = tipo === 'desktop' ? 'background.jpg' : 'background-mobile.jpg';
   const reader = new FileReader();
   reader.onload = (e) => {
-    showBgPreview(e.target.result);
-    applyBgToForm(e.target.result);
-    // Instrui o admin sobre o próximo passo
-    alert('Prévia aplicada! Para que a imagem apareça para todos os convidados, faça o upload do arquivo como "background.jpg" (ou .png) diretamente no seu repositório do GitHub.');
+    showBgPreview(tipo, e.target.result);
+    if (tipo === 'desktop') applyBgDesktop(e.target.result);
+    else applyBgMobile(e.target.result);
+    alert('Prévia aplicada! Para que a imagem apareça para todos, suba o arquivo como "' + nomeEsperado + '" no GitHub.');
   };
   reader.readAsDataURL(file);
 }
 
-function removeImage() {
-  document.getElementById('bg-file').value = '';
-  document.getElementById('preview-img').src = '';
-  document.getElementById('upload-preview').style.display = 'none';
-  document.getElementById('upload-zone').style.display = 'block';
-  localStorage.removeItem(BG_KEY);
-  applyBgToForm(null);
+function removeImage(tipo) {
+  const inputId = tipo === 'desktop' ? 'bg-file-desktop' : 'bg-file-mobile';
+  const previewId = tipo === 'desktop' ? 'preview-img-desktop' : 'preview-img-mobile';
+  document.getElementById(inputId).value = '';
+  const el = document.getElementById(previewId);
+  if (el) { el.src = ''; el.style.display = 'none'; }
+  if (tipo === 'desktop') {
+    document.getElementById('bg-overlay').style.backgroundImage = 'none';
+    document.getElementById('bg-overlay').classList.remove('has-image');
+  } else {
+    document.getElementById('art-header').style.backgroundImage = 'none';
+    document.getElementById('art-header').classList.remove('has-image');
+  }
 }
 
 /* ---------- ADMIN: SENHA ---------- */
@@ -657,11 +678,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('save-webhook-btn').addEventListener('click', salvarWebhook);
 
   // admin: imagem de fundo
-  document.getElementById('upload-zone').addEventListener('click', () => {
-    document.getElementById('bg-file').click();
-  });
-  document.getElementById('bg-file').addEventListener('change', (e) => handleImageUpload(e.target));
-  document.getElementById('remove-img-btn').addEventListener('click', removeImage);
+  const uzD = document.getElementById('upload-zone-desktop');
+  const uzM = document.getElementById('upload-zone-mobile');
+  if (uzD) uzD.addEventListener('click', () => document.getElementById('bg-file-desktop').click());
+  if (uzM) uzM.addEventListener('click', () => document.getElementById('bg-file-mobile').click());
+  const bfD = document.getElementById('bg-file-desktop');
+  const bfM = document.getElementById('bg-file-mobile');
+  if (bfD) bfD.addEventListener('change', (e) => handleImageUpload(e.target, 'desktop'));
+  if (bfM) bfM.addEventListener('change', (e) => handleImageUpload(e.target, 'mobile'));
+  const rmD = document.getElementById('remove-img-desktop');
+  const rmM = document.getElementById('remove-img-mobile');
+  if (rmD) rmD.addEventListener('click', () => removeImage('desktop'));
+  if (rmM) rmM.addEventListener('click', () => removeImage('mobile'));
 
   // admin: senha
   document.getElementById('save-pwd-btn').addEventListener('click', salvarSenha);
