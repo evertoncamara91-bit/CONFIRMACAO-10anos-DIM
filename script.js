@@ -496,32 +496,46 @@ function renderFieldsEditor() {
 
 /* ---------- ADMIN: IMAGEM DE FUNDO ---------- */
 
-function loadBgPreview() {
-  const saved = localStorage.getItem(BG_KEY);
-  if (saved) {
-    showBgPreview(saved);
+// Nomes aceitos para a imagem no repositório (tenta cada um em ordem)
+const BG_FILENAMES = ['background.jpg', 'background.jpeg', 'background.png', 'background.webp'];
+
+function carregarImagemDoRepositorio() {
+  // Tenta cada extensão possível até encontrar uma que exista
+  function tentarProximo(index) {
+    if (index >= BG_FILENAMES.length) return; // nenhuma encontrada, sem imagem
+    const url = BG_FILENAMES[index];
+    const img = new Image();
+    img.onload = () => applyBgToForm(url); // achou! aplica
+    img.onerror = () => tentarProximo(index + 1); // não existe, tenta próxima
+    img.src = url + '?v=' + Date.now(); // ?v= evita cache antigo
   }
+  tentarProximo(0);
 }
 
-function showBgPreview(dataUrl) {
-  document.getElementById('preview-img').src = dataUrl;
+function loadBgPreview() {
+  // No painel admin, mostra preview se houver imagem no repositório
+  BG_FILENAMES.forEach(name => {
+    const img = new Image();
+    img.onload = () => showBgPreview(name);
+    img.src = name + '?v=' + Date.now();
+  });
+}
+
+function showBgPreview(url) {
+  document.getElementById('preview-img').src = url;
   document.getElementById('upload-zone').style.display = 'none';
   document.getElementById('upload-preview').style.display = 'block';
 }
 
-function applyBgToForm(dataUrl) {
+function applyBgToForm(url) {
   const overlay = document.getElementById('bg-overlay');
   const artHeader = document.getElementById('art-header');
 
-  if (dataUrl) {
-    // Desktop: wallpaper atrás do formulário
-    overlay.style.backgroundImage = 'url(' + dataUrl + ')';
+  if (url) {
+    overlay.style.backgroundImage = 'url(' + url + ')';
     overlay.classList.add('has-image');
-
-    // Mobile: faixa no topo
-    artHeader.style.backgroundImage = 'url(' + dataUrl + ')';
+    artHeader.style.backgroundImage = 'url(' + url + ')';
     artHeader.classList.add('has-image');
-
     document.getElementById('bg-pattern').style.display = 'none';
   } else {
     overlay.style.backgroundImage = 'none';
@@ -539,17 +553,13 @@ function handleImageUpload(input) {
     alert('A imagem deve ter no máximo 5 MB.');
     return;
   }
+  // Mostra preview local imediato no admin
   const reader = new FileReader();
   reader.onload = (e) => {
-    const url = e.target.result;
-    try {
-      localStorage.setItem(BG_KEY, url);
-    } catch (err) {
-      alert('A imagem é muito grande para ser salva no navegador. Tente uma imagem mais leve (recomendo comprimir o PNG/JPG antes do upload).');
-      return;
-    }
-    showBgPreview(url);
-    applyBgToForm(url);
+    showBgPreview(e.target.result);
+    applyBgToForm(e.target.result);
+    // Instrui o admin sobre o próximo passo
+    alert('Prévia aplicada! Para que a imagem apareça para todos os convidados, faça o upload do arquivo como "background.jpg" (ou .png) diretamente no seu repositório do GitHub.');
   };
   reader.readAsDataURL(file);
 }
@@ -617,9 +627,8 @@ function showToast(msg) {
 document.addEventListener('DOMContentLoaded', () => {
   renderPublicForm();
 
-  // aplica imagem de fundo salva, se houver
-  const savedBg = localStorage.getItem(BG_KEY);
-  if (savedBg) applyBgToForm(savedBg);
+  // carrega imagem de fundo do repositório (funciona em qualquer dispositivo)
+  carregarImagemDoRepositorio();
 
   // botões do formulário público
   document.getElementById('cbtn-sim').addEventListener('click', () => setConfirm(true));
