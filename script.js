@@ -3,11 +3,11 @@ const PATENTES = {
   eb: ['Marechal','General-de-Exército','General-de-Divisão','General-de-Brigada','Coronel','Tenente-Coronel','Major','Capitão','1º Tenente','2º Tenente','Aspirante-a-Oficial','Subtenente','1º Sargento','2º Sargento','3º Sargento','Cabo','Soldado'],
   fab: ['Marechal-do-Ar','Tenente-Brigadeiro-do-Ar','Major-Brigadeiro','Brigadeiro','Coronel','Tenente-Coronel','Major','Capitão','1º Tenente','2º Tenente','Aspirante-a-Oficial','Subtenente','1º Sargento','2º Sargento','3º Sargento','Cabo','Soldado']
 };
- 
+
 const STORAGE_KEY = 'rsvp_quartel_config';
 const PWD_KEY = 'rsvp_quartel_admin_pwd';
 const BG_KEY = 'rsvp_quartel_bg_image';
- 
+
 const DEFAULT_CONFIG = {
   submitbtn: 'Enviar confirmação',
   footer: 'Todos os campos são obrigatórios. Dados usados exclusivamente para organização do evento.',
@@ -21,14 +21,14 @@ const DEFAULT_CONFIG = {
     { id:'militar', label:'Você é militar?', type:'toggle-militar', required:true, enabled:true }
   ]
 };
- 
+
 let config = loadConfig();
 let adminPwd = localStorage.getItem(PWD_KEY) || '1234';
 let isMilitar = null;
 let confirma = null;
- 
+
 /* ---------- PERSISTÊNCIA ---------- */
- 
+
 function loadConfig() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -42,38 +42,38 @@ function loadConfig() {
   }
   return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 }
- 
+
 function saveConfig() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
- 
+
 /* ---------- RENDERIZAÇÃO DO FORMULÁRIO PÚBLICO ---------- */
- 
+
 function renderPublicForm() {
   document.getElementById('pub-submit-btn').textContent = config.submitbtn;
   document.getElementById('pub-footer').textContent = config.footer;
   document.getElementById('top-spacer').style.height = (config.spacer || 0) + 'px';
- 
+
   const container = document.getElementById('fields-render');
   container.innerHTML = '';
   const enabled = config.fields.filter(f => f.enabled);
- 
+
   const personalFields = enabled.filter(f => f.type !== 'toggle-militar');
   const militarField = enabled.find(f => f.type === 'toggle-militar');
- 
+
   if (personalFields.length) {
     const lbl = document.createElement('div');
     lbl.className = 'sec-label';
     lbl.textContent = 'Dados pessoais';
     container.appendChild(lbl);
- 
+
     const textFields = personalFields.filter(f => ['text','tel','email'].includes(f.type));
     const nome = textFields.find(f => f.id === 'nome');
     const guerra = textFields.find(f => f.id === 'nomeguerra');
     const tel = textFields.find(f => f.id === 'tel');
     const email = textFields.find(f => f.id === 'email');
     const outros = textFields.filter(f => !['nome','nomeguerra','tel','email'].includes(f.id));
- 
+
     if (nome) container.appendChild(makeTextField(nome));
     if (guerra) container.appendChild(makeTextField(guerra));
     if (tel || email) {
@@ -85,7 +85,7 @@ function renderPublicForm() {
     }
     outros.forEach(f => container.appendChild(makeTextField(f)));
   }
- 
+
   if (militarField) {
     const sep = document.createElement('div');
     sep.className = 'sep';
@@ -98,7 +98,7 @@ function renderPublicForm() {
     attachMilitarHandlers();
   }
 }
- 
+
 function makeTextField(f) {
   const div = document.createElement('div');
   div.className = 'f';
@@ -109,7 +109,7 @@ function makeTextField(f) {
     '<div class="emsg" id="err-pub-' + f.id + '">Campo obrigatório.</div>';
   return div;
 }
- 
+
 function makeMilitarBlock(f) {
   const wrap = document.createElement('div');
   const reqSpan = f.required ? ' <span class="req">*</span>' : '';
@@ -154,13 +154,13 @@ function makeMilitarBlock(f) {
     '</div>';
   return wrap;
 }
- 
+
 function attachMilitarHandlers() {
   document.getElementById('btn-mil-sim').addEventListener('click', () => setMilitar(true));
   document.getElementById('btn-mil-nao').addEventListener('click', () => setMilitar(false));
   document.getElementById('pub-forca').addEventListener('change', (e) => setForca(e.target.value));
 }
- 
+
 function setMilitar(val) {
   isMilitar = val;
   document.getElementById('btn-mil-sim').classList.toggle('on', val);
@@ -174,18 +174,18 @@ function setMilitar(val) {
     document.getElementById('pub-forca').value = '';
   }
 }
- 
+
 function setForca(v) {
   const cpDropdown = document.getElementById('campo-patente');
   const coNome     = document.getElementById('campo-outra-militar');
   const sel        = document.getElementById('pub-patente');
   document.getElementById('err-forca').classList.remove('v');
   document.getElementById('pub-forca').classList.remove('err');
- 
+
   // esconde tudo primeiro
   cpDropdown.classList.add('hidden');
   if (coNome) coNome.classList.add('hidden');
- 
+
   if (v === 'outro') {
     // outra instituição: só nome da instituição, sem posto
     if (coNome) coNome.classList.remove('hidden');
@@ -195,19 +195,19 @@ function setForca(v) {
     cpDropdown.classList.remove('hidden');
   }
 }
- 
+
 function setConfirm(val) {
   confirma = val;
   document.getElementById('cbtn-sim').classList.toggle('on', val);
   document.getElementById('cbtn-nao').classList.toggle('on', !val);
   document.getElementById('err-confirma').classList.remove('v');
 }
- 
+
 /* ---------- VALIDAÇÃO E ENVIO ---------- */
- 
+
 function validarFormulario() {
   let ok = true;
- 
+
   config.fields.filter(f => f.enabled && f.type !== 'toggle-militar').forEach(f => {
     const el = document.getElementById('pub-' + f.id);
     if (!el) return;
@@ -223,7 +223,7 @@ function validarFormulario() {
       if (e) e.classList.remove('v');
     }
   });
- 
+
   const mf = config.fields.find(f => f.type === 'toggle-militar' && f.enabled);
   if (mf) {
     if (isMilitar === null) {
@@ -250,22 +250,22 @@ function validarFormulario() {
       }
     }
   }
- 
+
   if (confirma === null) {
     document.getElementById('err-confirma').classList.add('v');
     ok = false;
   }
- 
+
   return ok;
 }
- 
+
 function coletarDadosFormulario() {
   const dados = {};
   config.fields.filter(f => f.enabled && f.type !== 'toggle-militar').forEach(f => {
     const el = document.getElementById('pub-' + f.id);
     if (el) dados[f.id] = el.value.trim();
   });
- 
+
   dados.militar = isMilitar ? 'Sim' : 'Não';
   if (isMilitar) {
     const forca = document.getElementById('pub-forca').value;
@@ -289,18 +289,18 @@ function coletarDadosFormulario() {
     dados.forcaInstituicao = instCivil ? instCivil.value.trim() : '';
     dados.posto            = '';
   }
- 
+
   dados.confirmacao = confirma ? 'Confirmou presença' : 'Não poderá comparecer';
   dados.dataEnvio = new Date().toLocaleString('pt-BR');
- 
+
   return dados;
 }
- 
+
 function enviarFormulario() {
   if (!validarFormulario()) return;
- 
+
   const dados = coletarDadosFormulario();
- 
+
   if (!config.webhookUrl) {
     // Sem conexão configurada: ainda mostra sucesso ao convidado,
     // mas avisa no console (não trava o uso do site em produção).
@@ -308,38 +308,42 @@ function enviarFormulario() {
     mostrarSucesso(dados);
     return;
   }
- 
+
   mostrarTela('loading');
- 
-  // Usa GET com parâmetros via URL — funciona em todos os dispositivos e redes,
-  // sem bloqueios de CORS. O Apps Script recebe pelo doGet em vez de doPost.
+
+  // Monta URL com parâmetros GET
   const params = new URLSearchParams(dados);
   const url = config.webhookUrl + '?' + params.toString();
- 
-  const img = new Image();
-  img.onload = () => mostrarSucesso(dados);
-  img.onerror = () => mostrarSucesso(dados); // Apps Script retorna opaco mas executa
-  // Timeout de segurança: se demorar >8s considera enviado
-  const timeout = setTimeout(() => mostrarSucesso(dados), 8000);
-  img.onload = img.onerror = () => { clearTimeout(timeout); mostrarSucesso(dados); };
-  img.src = url;
+
+  // Timeout de segurança — se demorar mais de 10s mostra sucesso de qualquer forma
+  const timeout = setTimeout(() => mostrarSucesso(dados), 10000);
+
+  // Tenta fetch primeiro (mais confiável)
+  fetch(url, { method: 'GET', mode: 'no-cors' })
+    .then(() => { clearTimeout(timeout); mostrarSucesso(dados); })
+    .catch(() => {
+      // Fallback: tenta via Image() se fetch falhar
+      const img = new Image();
+      img.onload = img.onerror = () => { clearTimeout(timeout); mostrarSucesso(dados); };
+      img.src = url;
+    });
 }
- 
+
 function mostrarTela(nome) {
   document.getElementById('form-card').style.display = (nome === 'form') ? 'block' : 'none';
   document.getElementById('success-screen').style.display = (nome === 'success') ? 'block' : 'none';
   document.getElementById('loading-screen').style.display = (nome === 'loading') ? 'block' : 'none';
   document.getElementById('error-screen').style.display = (nome === 'error') ? 'block' : 'none';
 }
- 
+
 function mostrarSucesso(dados) {
   mostrarTela('success');
   const nomeExibido = dados.nomeguerra || dados.nome || '';
   document.getElementById('nome-confirmado').textContent = nomeExibido;
 }
- 
+
 /* ---------- ADMIN: LOGIN ---------- */
- 
+
 function openAdminLogin() {
   document.getElementById('login-modal').classList.add('v');
   document.getElementById('login-pwd').value = '';
@@ -359,9 +363,9 @@ function doLogin() {
     document.getElementById('login-pwd').value = '';
   }
 }
- 
+
 /* ---------- ADMIN: NAVEGAÇÃO ---------- */
- 
+
 function openAdmin() {
   document.getElementById('form-page').style.display = 'none';
   document.getElementById('admin-page').classList.add('v');
@@ -380,16 +384,16 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
 }
- 
+
 /* ---------- ADMIN: TEXTOS ---------- */
- 
+
 function loadAdminValues() {
   document.getElementById('cfg-submitbtn').value = config.submitbtn;
   document.getElementById('cfg-footer').value = config.footer;
   document.getElementById('cfg-spacer').value = config.spacer;
   document.getElementById('cfg-webhook').value = config.webhookUrl || '';
 }
- 
+
 function salvarTextos() {
   config.submitbtn = document.getElementById('cfg-submitbtn').value || DEFAULT_CONFIG.submitbtn;
   config.footer = document.getElementById('cfg-footer').value || DEFAULT_CONFIG.footer;
@@ -398,7 +402,7 @@ function salvarTextos() {
   renderPublicForm();
   showToast('Textos salvos com sucesso!');
 }
- 
+
 function salvarWebhook() {
   config.webhookUrl = document.getElementById('cfg-webhook').value.trim();
   saveConfig();
@@ -406,19 +410,19 @@ function salvarWebhook() {
   msg.classList.add('v');
   setTimeout(() => msg.classList.remove('v'), 3000);
 }
- 
+
 /* ---------- ADMIN: CAMPOS ---------- */
- 
+
 function renderFieldsEditor() {
   const c = document.getElementById('fields-editor');
   c.innerHTML = '';
   const typeLabels = { text: 'Texto', tel: 'Telefone', email: 'E-mail', 'toggle-militar': 'Bloco militar' };
- 
+
   config.fields.forEach((f, i) => {
     const badgeClass = f.type === 'toggle-militar' ? 'badge-toggle' : (f.type === 'text' ? 'badge-text' : 'badge-select');
     const item = document.createElement('div');
     item.className = 'field-item';
- 
+
     let html =
       '<div class="field-item-header">' +
         '<div style="display:flex;align-items:center;gap:8px;">' +
@@ -438,7 +442,7 @@ function renderFieldsEditor() {
           '<label>Rótulo do campo</label>' +
           '<input type="text" data-idx="' + i + '" data-action="update-label" value="' + escapeHtml(f.label) + '">' +
         '</div>';
- 
+
     if (f.type !== 'toggle-militar') {
       html +=
         '<div class="afield">' +
@@ -449,7 +453,7 @@ function renderFieldsEditor() {
       html += '<div></div>';
     }
     html += '</div>';
- 
+
     if (f.type !== 'toggle-militar') {
       html +=
         '<label class="toggle-switch" style="margin-top:4px;">' +
@@ -460,11 +464,11 @@ function renderFieldsEditor() {
           '<span class="sw-label">Obrigatório</span>' +
         '</label>';
     }
- 
+
     item.innerHTML = html;
     c.appendChild(item);
   });
- 
+
   const saveBtn = document.createElement('button');
   saveBtn.className = 'save-btn';
   saveBtn.style.marginTop = '1rem';
@@ -476,7 +480,7 @@ function renderFieldsEditor() {
     showToast('Campos salvos!');
   });
   c.appendChild(saveBtn);
- 
+
   // listeners dos inputs/checkboxes criados dinamicamente
   c.querySelectorAll('[data-action]').forEach(el => {
     const idx = parseInt(el.dataset.idx, 10);
@@ -490,13 +494,13 @@ function renderFieldsEditor() {
     });
   });
 }
- 
+
 /* ---------- ADMIN: IMAGEM DE FUNDO ---------- */
- 
+
 // Imagens separadas para desktop e mobile
 const BG_DESKTOP = ['background.jpg', 'background.jpeg', 'background.png', 'background.webp'];
 const BG_MOBILE  = ['background-mobile.jpg', 'background-mobile.jpeg', 'background-mobile.png', 'background-mobile.webp'];
- 
+
 function tentarCarregar(lista, callback) {
   function proximo(i) {
     if (i >= lista.length) return;
@@ -507,7 +511,7 @@ function tentarCarregar(lista, callback) {
   }
   proximo(0);
 }
- 
+
 function carregarImagemDoRepositorio() {
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
@@ -524,26 +528,26 @@ function carregarImagemDoRepositorio() {
     });
   }
 }
- 
+
 function applyBgDesktop(url) {
   const overlay = document.getElementById('bg-overlay');
   overlay.style.backgroundImage = 'url(' + url + ')';
   overlay.classList.add('has-image');
   document.getElementById('bg-pattern').style.display = 'none';
 }
- 
+
 function applyBgMobile(url) {
   const artHeader = document.getElementById('art-header');
   artHeader.style.backgroundImage = 'url(' + url + ')';
   artHeader.classList.add('has-image');
   document.getElementById('bg-pattern').style.display = 'none';
 }
- 
+
 function loadBgPreview() {
   tentarCarregar(BG_DESKTOP, url => showBgPreview('desktop', url));
   tentarCarregar(BG_MOBILE,  url => showBgPreview('mobile', url));
 }
- 
+
 function showBgPreview(tipo, url) {
   const id = tipo === 'desktop' ? 'preview-img-desktop' : 'preview-img-mobile';
   const el = document.getElementById(id);
@@ -551,7 +555,7 @@ function showBgPreview(tipo, url) {
   document.getElementById('upload-zone').style.display = 'none';
   document.getElementById('upload-preview').style.display = 'block';
 }
- 
+
 function handleImageUpload(input, tipo) {
   const file = input.files[0];
   if (!file) return;
@@ -569,7 +573,7 @@ function handleImageUpload(input, tipo) {
   };
   reader.readAsDataURL(file);
 }
- 
+
 function removeImage(tipo) {
   const inputId = tipo === 'desktop' ? 'bg-file-desktop' : 'bg-file-mobile';
   const previewId = tipo === 'desktop' ? 'preview-img-desktop' : 'preview-img-mobile';
@@ -584,15 +588,15 @@ function removeImage(tipo) {
     document.getElementById('art-header').classList.remove('has-image');
   }
 }
- 
+
 /* ---------- ADMIN: SENHA ---------- */
- 
+
 function salvarSenha() {
   const atual = document.getElementById('pwd-atual').value;
   const nova = document.getElementById('pwd-nova').value;
   const conf = document.getElementById('pwd-conf').value;
   const msg = document.getElementById('pwd-msg');
- 
+
   if (atual !== adminPwd) {
     msg.style.color = '#dc2626';
     msg.textContent = 'Senha atual incorreta.';
@@ -608,7 +612,7 @@ function salvarSenha() {
     msg.textContent = 'As senhas não coincidem.';
     return;
   }
- 
+
   adminPwd = nova;
   localStorage.setItem(PWD_KEY, adminPwd);
   msg.style.color = '#059669';
@@ -617,15 +621,15 @@ function salvarSenha() {
   document.getElementById('pwd-nova').value = '';
   document.getElementById('pwd-conf').value = '';
 }
- 
+
 /* ---------- UTILITÁRIOS ---------- */
- 
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
   return div.innerHTML;
 }
- 
+
 function showToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-family:inherit;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
@@ -633,21 +637,21 @@ function showToast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
- 
+
 /* ---------- INICIALIZAÇÃO E LISTENERS ---------- */
- 
+
 document.addEventListener('DOMContentLoaded', () => {
   renderPublicForm();
- 
+
   // carrega imagem de fundo do repositório (funciona em qualquer dispositivo)
   carregarImagemDoRepositorio();
- 
+
   // botões do formulário público
   document.getElementById('cbtn-sim').addEventListener('click', () => setConfirm(true));
   document.getElementById('cbtn-nao').addEventListener('click', () => setConfirm(false));
   document.getElementById('pub-submit-btn').addEventListener('click', enviarFormulario);
   document.getElementById('retry-btn').addEventListener('click', enviarFormulario);
- 
+
   // admin: abrir/fechar
   document.getElementById('open-admin-btn').addEventListener('click', openAdminLogin);
   document.getElementById('close-admin-btn').addEventListener('click', closeAdmin);
@@ -656,18 +660,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('login-pwd').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') doLogin();
   });
- 
+
   // admin: abas
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
- 
+
   // admin: textos
   document.getElementById('save-textos-btn').addEventListener('click', salvarTextos);
- 
+
   // admin: conexão (webhook)
   document.getElementById('save-webhook-btn').addEventListener('click', salvarWebhook);
- 
+
   // admin: imagem de fundo
   const uzD = document.getElementById('upload-zone-desktop');
   const uzM = document.getElementById('upload-zone-mobile');
@@ -681,7 +685,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const rmM = document.getElementById('remove-img-mobile');
   if (rmD) rmD.addEventListener('click', () => removeImage('desktop'));
   if (rmM) rmM.addEventListener('click', () => removeImage('mobile'));
- 
+
   // admin: senha
   document.getElementById('save-pwd-btn').addEventListener('click', salvarSenha);
 });
