@@ -22,11 +22,14 @@ const STORAGE_KEY = 'rsvp_quartel_config';
 const PWD_KEY = 'rsvp_quartel_admin_pwd';
 const BG_KEY = 'rsvp_quartel_bg_image';
 
+// URL do Google Apps Script fixada no código — funciona em qualquer dispositivo
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyrkRRWAA6cWmNbuS_Fm4IDFwaW-mLcr2cGZ8i2h597cL860VSM6EsG2H5pVWY6UnMq/exec';
+
 const DEFAULT_CONFIG = {
   submitbtn: 'Enviar confirmação',
   footer: 'Todos os campos são obrigatórios. Dados usados exclusivamente para organização do evento.',
   spacer: 24,
-  webhookUrl: '',
+  webhookUrl: WEBHOOK_URL,
   fields: [
     { id:'nome', label:'Nome completo', type:'text', placeholder:'Digite seu nome completo', required:true, enabled:true },
     { id:'nomeguerra', label:'Nome de guerra', type:'text', placeholder:'Ex: Silva, Rodrigues...', required:true, enabled:true },
@@ -48,8 +51,10 @@ function loadConfig() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // mescla com default para garantir que novas chaves futuras não quebrem configs antigas
-      return Object.assign({}, DEFAULT_CONFIG, parsed);
+      const merged = Object.assign({}, DEFAULT_CONFIG, parsed);
+      // URL fixa no código sempre tem prioridade — garante envio de qualquer dispositivo
+      merged.webhookUrl = WEBHOOK_URL;
+      return merged;
     }
   } catch (e) {
     console.warn('Não foi possível carregar configuração salva, usando padrão.', e);
