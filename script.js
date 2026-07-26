@@ -191,20 +191,20 @@ function setMilitar(val) {
 
 function setForca(v) {
   const cp = document.getElementById('campo-patente');
-  const co = document.getElementById('campo-outra');
+  const co = document.getElementById('campo-outra-militar');
   const sel = document.getElementById('pub-patente');
   document.getElementById('err-forca').classList.remove('v');
   document.getElementById('pub-forca').classList.remove('err');
   if (v === 'outro') {
     cp.classList.add('hidden');
-    co.classList.remove('hidden');
+    if (co) co.classList.remove('hidden');
   } else if (PATENTES[v]) {
-    co.classList.add('hidden');
+    if (co) co.classList.add('hidden');
     sel.innerHTML = '<option value="">Selecione</option>' + PATENTES[v].map(p => '<option>' + p + '</option>').join('');
     cp.classList.remove('hidden');
   } else {
     cp.classList.add('hidden');
-    co.classList.add('hidden');
+    if (co) co.classList.add('hidden');
   }
 }
 
