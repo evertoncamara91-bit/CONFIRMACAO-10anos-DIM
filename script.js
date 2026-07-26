@@ -140,10 +140,14 @@ function makeMilitarBlock(f) {
         '<select id="pub-patente"><option value="">Selecione</option></select>' +
         '<div class="emsg" id="err-patente">Selecione o posto ou graduação.</div>' +
       '</div>' +
-      '<div class="f hidden" id="campo-outra-militar" style="margin-bottom:0;">' +
+      '<div class="f hidden" id="campo-outra-militar" style="margin-bottom:0.75rem;">' +
         '<label>Nome da instituição <span class="req">*</span></label>' +
         '<input type="text" placeholder="Digite o nome da instituição" id="pub-outra-militar">' +
         '<div class="emsg" id="err-outra">Informe o nome da instituição.</div>' +
+      '</div>' +
+      '<div class="f hidden" id="campo-posto-livre" style="margin-bottom:0;">' +
+        '<label>Posto / Graduação <span style="font-size:10px;opacity:0.5;">(opcional)</span></label>' +
+        '<input type="text" placeholder="Ex: Coronel, Capitão..." id="pub-posto-livre">' +
       '</div>' +
     '</div>' +
     // Bloco civil — instituição opcional
@@ -177,21 +181,26 @@ function setMilitar(val) {
 }
  
 function setForca(v) {
-  const cp = document.getElementById('campo-patente');
-  const co = document.getElementById('campo-outra-militar');
-  const sel = document.getElementById('pub-patente');
+  const cpDropdown  = document.getElementById('campo-patente');
+  const coNome      = document.getElementById('campo-outra-militar');
+  const coPostoLivre= document.getElementById('campo-posto-livre');
+  const sel         = document.getElementById('pub-patente');
   document.getElementById('err-forca').classList.remove('v');
   document.getElementById('pub-forca').classList.remove('err');
+ 
+  // esconde tudo primeiro
+  cpDropdown.classList.add('hidden');
+  if (coNome)       coNome.classList.add('hidden');
+  if (coPostoLivre) coPostoLivre.classList.add('hidden');
+ 
   if (v === 'outro') {
-    cp.classList.add('hidden');
-    if (co) co.classList.remove('hidden');
+    // outra instituição: campo nome + posto livre (texto)
+    if (coNome)       coNome.classList.remove('hidden');
+    if (coPostoLivre) coPostoLivre.classList.remove('hidden');
   } else if (PATENTES[v]) {
-    if (co) co.classList.add('hidden');
+    // força conhecida: dropdown de patentes
     sel.innerHTML = '<option value="">Selecione</option>' + PATENTES[v].map(p => '<option>' + p + '</option>').join('');
-    cp.classList.remove('hidden');
-  } else {
-    cp.classList.add('hidden');
-    if (co) co.classList.add('hidden');
+    cpDropdown.classList.remove('hidden');
   }
 }
  
@@ -237,10 +246,11 @@ function validarFormulario() {
         ok = false;
       }
       if (forca === 'outro') {
-        const o = document.getElementById('pub-outra').value.trim();
-        if (!o) {
-          document.getElementById('pub-outra').classList.add('err');
-          document.getElementById('err-outra').classList.add('v');
+        const o = document.getElementById('pub-outra-militar');
+        if (o && !o.value.trim()) {
+          o.classList.add('err');
+          const e = document.getElementById('err-outra');
+          if (e) e.classList.add('v');
           ok = false;
         }
       } else if (PATENTES[forca]) {
@@ -272,18 +282,25 @@ function coletarDadosFormulario() {
   if (isMilitar) {
     const forca = document.getElementById('pub-forca').value;
     const labels = { mb: 'Marinha do Brasil', eb: 'Exército Brasileiro', fab: 'Força Aérea Brasileira', outro: 'Outra instituição' };
-    dados.forcaInstituicao = labels[forca] || forca;
     if (forca === 'outro') {
-      dados.forcaInstituicao = document.getElementById('pub-outra-militar').value.trim();
-      dados.posto = '';
+      // outra instituição: nome digitado + posto livre
+      const nomeInst  = document.getElementById('pub-outra-militar');
+      const postoLivre= document.getElementById('pub-posto-livre');
+      dados.forca          = 'Outra instituição';
+      dados.forcaInstituicao = nomeInst ? nomeInst.value.trim() : '';
+      dados.posto          = postoLivre ? postoLivre.value.trim() : '';
     } else {
-      dados.posto = document.getElementById('pub-patente').value;
+      // força conhecida: nome da força + patente do dropdown
+      dados.forca          = labels[forca] || forca;
+      dados.forcaInstituicao = labels[forca] || forca;
+      dados.posto          = document.getElementById('pub-patente').value;
     }
   } else {
-    // civil: instituição opcional vai para a mesma coluna de força/instituição
+    // civil
     const instCivil = document.getElementById('pub-inst-civil');
+    dados.forca            = '';
     dados.forcaInstituicao = instCivil ? instCivil.value.trim() : '';
-    dados.posto = '';
+    dados.posto            = '';
   }
  
   dados.confirmacao = confirma ? 'Confirmou presença' : 'Não poderá comparecer';
