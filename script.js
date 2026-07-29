@@ -156,12 +156,16 @@ function makeMilitarBlock(f) {
       '</div>' +
       '<div class="f hidden" id="campo-patente" style="margin-bottom:0.75rem;">' +
         '<label>Posto / Graduação <span style="font-size:10px;opacity:0.5;">(opcional)</span></label>' +
-        '<select id="pub-patente"><option value="">Selecione</option></select>' +
+        '<select id="pub-patente"><option value="">Selecione (opcional)</option></select>' +
       '</div>' +
-      '<div class="f hidden" id="campo-outra-militar" style="margin-bottom:0;">' +
+      '<div class="f hidden" id="campo-outra-militar" style="margin-bottom:0.75rem;">' +
         '<label>Nome da instituição <span class="req">*</span></label>' +
         '<input type="text" placeholder="Digite o nome da instituição" id="pub-outra-militar">' +
         '<div class="emsg" id="err-outra">Informe o nome da instituição.</div>' +
+      '</div>' +
+      '<div class="f hidden" id="campo-unidade" style="margin-bottom:0;">' +
+        '<label>Unidade / Quartel <span style="font-size:10px;opacity:0.5;">(opcional)</span></label>' +
+        '<input type="text" placeholder="Ex: DIM, CIAA, 1º BEC..." id="pub-unidade">' +
       '</div>' +
     '</div>' +
     // Bloco civil — instituição opcional
@@ -195,23 +199,27 @@ function setMilitar(val) {
 }
 
 function setForca(v) {
-  const cpDropdown = document.getElementById('campo-patente');
-  const coNome     = document.getElementById('campo-outra-militar');
-  const sel        = document.getElementById('pub-patente');
+  const cpDropdown  = document.getElementById('campo-patente');
+  const coNome      = document.getElementById('campo-outra-militar');
+  const coUnidade   = document.getElementById('campo-unidade');
+  const sel         = document.getElementById('pub-patente');
   document.getElementById('err-forca').classList.remove('v');
   document.getElementById('pub-forca').classList.remove('err');
 
   // esconde tudo primeiro
   cpDropdown.classList.add('hidden');
-  if (coNome) coNome.classList.add('hidden');
+  if (coNome)    coNome.classList.add('hidden');
+  if (coUnidade) coUnidade.classList.add('hidden');
 
   if (v === 'outro') {
-    // outra instituição: só nome da instituição, sem posto
-    if (coNome) coNome.classList.remove('hidden');
+    // outra instituição: campo nome obrigatório + unidade opcional
+    if (coNome)    coNome.classList.remove('hidden');
+    if (coUnidade) coUnidade.classList.remove('hidden');
   } else if (PATENTES[v]) {
-    // força conhecida: dropdown de patentes (opcional)
+    // Marinha/EB/FAB: dropdown de posto + campo unidade
     sel.innerHTML = '<option value="">Selecione (opcional)</option>' + PATENTES[v].map(p => '<option>' + p + '</option>').join('');
     cpDropdown.classList.remove('hidden');
+    if (coUnidade) coUnidade.classList.remove('hidden');
   }
 }
 
@@ -289,17 +297,21 @@ function coletarDadosFormulario() {
   if (isMilitar) {
     const forca = document.getElementById('pub-forca').value;
     const labels = { mb: 'Marinha do Brasil', eb: 'Exército Brasileiro', fab: 'Força Aérea Brasileira', outro: 'Outra instituição' };
+    const unidadeEl = document.getElementById('pub-unidade');
+    const unidade   = unidadeEl ? unidadeEl.value.trim() : '';
     if (forca === 'outro') {
-      // outra instituição: só nome digitado, sem posto
+      // outra instituição: nome digitado + unidade
       const nomeInst = document.getElementById('pub-outra-militar');
       dados.forca            = 'Outra instituição';
       dados.forcaInstituicao = nomeInst ? nomeInst.value.trim() : '';
+      dados.unidade          = unidade;
       dados.posto            = '';
     } else {
-      // força conhecida: nome da força + patente do dropdown
-      dados.forca          = labels[forca] || forca;
-      dados.forcaInstituicao = labels[forca] || forca;
-      dados.posto          = document.getElementById('pub-patente').value;
+      // Marinha, EB ou FAB: força + unidade/quartel digitado
+      dados.forca            = labels[forca] || forca;
+      dados.forcaInstituicao = unidade;
+      dados.unidade          = unidade;
+      dados.posto            = document.getElementById('pub-patente').value;
     }
   } else {
     // civil
